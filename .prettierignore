@@ -1,0 +1,5 @@
+node_modules
+public/vite
+tmp
+vendor
+package-lock.json

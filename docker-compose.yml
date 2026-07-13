@@ -1,0 +1,63 @@
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  volumes:
+    - .:/app
+    - bundle:/usr/local/bundle
+    - node_modules:/app/node_modules
+  environment:
+    RAILS_ENV: development
+    DATABASE_HOST: db
+    DATABASE_PORT: 5432
+    DATABASE_USER: postgres
+    DATABASE_PASSWORD: postgres
+    DATABASE_NAME: mglogics_development
+    SHOPIFY_STORE_DOMAIN: ${SHOPIFY_STORE_DOMAIN:-}
+    SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
+    SHOPIFY_API_KEY: ${SHOPIFY_API_KEY:-}
+    SHOPIFY_API_SECRET: ${SHOPIFY_API_SECRET:-}
+    SHOPIFY_API_VERSION: ${SHOPIFY_API_VERSION:-2026-07}
+    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
+    GEMINI_CHUNK_DELAY_SECONDS: ${GEMINI_CHUNK_DELAY_SECONDS:-0.25}
+    APP_USERNAME: ${APP_USERNAME:-admin}
+    APP_PASSWORD: ${APP_PASSWORD:-}
+    SOLID_QUEUE_IN_PUMA: "false"
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mglogics_development
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mglogics_development"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    <<: *app
+    command: bin/dev
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+
+  worker:
+    <<: *app
+    command: bin/jobs
+
+volumes:
+  db_data:
+  bundle:
+  node_modules:

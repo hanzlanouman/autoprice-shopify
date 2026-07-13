@@ -1,0 +1,21 @@
+/.git/
+/.github/
+/.bundle/
+/.devcontainer/
+/.kamal/
+/config/deploy*.yml
+
+# Never copy local secrets into an image. The example is intentionally safe.
+/.env
+/.env.*
+!/.env.example
+/config/master.key
+/config/credentials/*.key
+
+/log/
+/tmp/
+/storage/
+
+**/node_modules/
+/public/assets/
+/public/vite*/

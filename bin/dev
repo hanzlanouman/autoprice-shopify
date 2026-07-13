@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+# Vite Ruby's development autoBuild mode compiles changed assets on demand, so
+# no separate JavaScript process is needed. Native development runs Solid Queue
+# through Puma by default; Docker Compose explicitly disables this because it
+# starts the dedicated worker service.
+export SOLID_QUEUE_IN_PUMA="${SOLID_QUEUE_IN_PUMA:-true}"
+bin/rails db:prepare
+bin/rails db:seed
+
+exec bin/rails server -b "${BINDING:-0.0.0.0}" -p "${PORT:-3000}" "$@"

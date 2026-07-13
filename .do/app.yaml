@@ -1,0 +1,106 @@
+# DigitalOcean App Platform specification.
+#
+# Demo topology: a pre-deploy migration job, one web service, and PostgreSQL.
+# Solid Queue runs inside Puma to avoid paying for and operating a second
+# component. Move it to a dedicated worker before business-critical use.
+#
+# Usage:
+#   1. Replace GITHUB_OWNER/GITHUB_REPO below with your pushed repository.
+#   2. doctl apps create --spec .do/app.yaml
+#   3. Set the SECRET-typed values in the DigitalOcean UI (or via `doctl`).
+#      Never commit real secret values into this file.
+#
+# See docs/DEPLOYMENT.md for the deployment walkthrough.
+
+name: mglogics-pricing
+region: nyc
+
+databases:
+  # Development-tier PostgreSQL. Cheap, but has NO automated backups.
+  # Before pointing this at a live Shopify store, promote to a managed
+  # PostgreSQL cluster (production: true) and enable backups.
+  - name: pricing-db
+    engine: PG
+    version: "16"
+    production: false
+
+# Runs once per release, before web starts. Creates and migrates both the
+# application tables and the Solid Queue tables in the single database.
+jobs:
+  - name: release
+    kind: PRE_DEPLOY
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: GITHUB_OWNER/GITHUB_REPO
+      branch: main
+      deploy_on_push: true
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    run_command: ./bin/rails db:prepare
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${pricing-db.DATABASE_URL}
+      - key: SECRET_KEY_BASE
+        scope: RUN_TIME
+        type: SECRET
+      # The production_safety initializer refuses to boot without this, and
+      # db:prepare boots the app. It must be present here too.
+      - key: APP_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+
+services:
+  - name: web
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: GITHUB_OWNER/GITHUB_REPO
+      branch: main
+      deploy_on_push: true
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    # The Dockerfile EXPOSEs 80 and starts Thruster.
+    http_port: 80
+    health_check:
+      http_path: /up
+      initial_delay_seconds: 20
+      period_seconds: 10
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${pricing-db.DATABASE_URL}
+      - key: SECRET_KEY_BASE
+        scope: RUN_TIME
+        type: SECRET
+      - key: APP_USERNAME
+        scope: RUN_TIME
+        value: admin
+      - key: APP_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+      - key: SHOPIFY_STORE_DOMAIN
+        scope: RUN_TIME
+        value: ""
+      - key: SHOPIFY_API_VERSION
+        scope: RUN_TIME
+        value: "2026-07"
+      - key: SHOPIFY_ACCESS_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+      - key: SHOPIFY_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: SHOPIFY_API_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: GEMINI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: GEMINI_MODEL
+        scope: RUN_TIME
+        value: gemini-3.5-flash
+      - key: SOLID_QUEUE_IN_PUMA
+        scope: RUN_TIME
+        value: "true"

@@ -1,0 +1,31 @@
+/.bundle
+
+# Local environment and secrets. Keep the documented template committable.
+/.env
+/.env.*
+!/.env.example
+
+# Runtime output
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+!/tmp/pids/
+/tmp/pids/*
+!/tmp/pids/.keep
+
+# Compiled assets and dependencies
+node_modules/
+/public/assets/
+/public/vite*/
+*-dev.log
+
+# Local encryption keys
+/config/*.key
+
+# Vite local overrides
+*.local
+
+# Local agent/editor state is not part of the application deliverable.
+/.agents/
+/.codex/
