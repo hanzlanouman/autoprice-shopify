@@ -1,4 +1,4 @@
-# Singleton holding the merchant's pricing rules (docs/ARCHITECTURE.md). Access via
+# Singleton holding the merchant's pricing rules. Access via
 # Setting.instance. next_run_at is recomputed here whenever the cadence or the
 # master switch changes, so scheduling logic lives in exactly one place.
 class Setting < ApplicationRecord

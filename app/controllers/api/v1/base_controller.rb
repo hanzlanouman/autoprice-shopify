@@ -1,7 +1,7 @@
 module Api
   module V1
     # Base for all JSON API endpoints. Owns the single error envelope and the
-    # exception → HTTP status taxonomy (docs/ARCHITECTURE.md). Controllers stay thin and
+    # exception → HTTP status taxonomy. Controllers stay thin and
     # never build error JSON by hand.
     class BaseController < ApplicationController
       # State-changing browser requests must carry the same-origin token from

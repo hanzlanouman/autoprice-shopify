@@ -1,7 +1,7 @@
 module Shopify
   # Drop-in stand-in for Shopify::Client used when no credentials are configured,
-  # so the whole pipeline runs on local seed data for demos and reviews
-  # (docs/DEPLOYMENT.md). It reads the product cache as if it were the store and lets
+  # so the whole pipeline runs on local seed data for demos and reviews. It
+  # reads the product cache as if it were the store and lets
   # PriceApplier persist writes back to the cache. Same interface as Client, so
   # the pipeline code is identical either way (dependency injection).
   class LocalClient

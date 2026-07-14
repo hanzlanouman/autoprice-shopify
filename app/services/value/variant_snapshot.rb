@@ -2,7 +2,7 @@ module Value
   # Immutable per-variant view used across the pricing pipeline. Combines live
   # Shopify data (price, inventory, tracked) with cached guard state
   # (original_price, last_written_price, adjustment history) so downstream
-  # stages stay pure — they never touch the database (docs/ARCHITECTURE.md).
+  # stages stay pure — they never touch the database.
   VariantSnapshot = Data.define(
     :gid,
     :title,

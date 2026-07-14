@@ -1,6 +1,6 @@
 module Pricing
   # Composes the pipeline for one run: fetch → filter → recommend → validate →
-  # apply → record (docs/ARCHITECTURE.md). Deterministic code owns correctness; the
+  # apply → record. Deterministic code owns correctness; the
   # recommender only proposes prices inside bounds it is told. Settings are read
   # once so the run is internally consistent (D12).
   class RunOrchestrator
@@ -52,7 +52,7 @@ module Pricing
     # Runs the primary recommender, then — if the merchant enabled fallback
     # pricing — fills any variants Gemini couldn't answer with the deterministic
     # formula (labeled "fallback"). Otherwise those variants are left to be
-    # skipped by the validator (docs/ARCHITECTURE.md degradation ladder).
+    # skipped by the validator.
     def recommend(eligible, settings)
       primary = @recommender.recommend(eligible, settings)
       recs = primary.index_by(&:variant_gid)

@@ -11,8 +11,8 @@ class CreatePricingRuns < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    # At most one run may be "running" at a time (belt-and-suspenders alongside
-    # the advisory lock in PricingRunJob — see docs/ARCHITECTURE.md).
+    # At most one run may be "running" at a time, alongside the advisory lock in
+    # PricingRunJob.
     add_index :pricing_runs, :status, unique: true, where: "status = 'running'", name: "index_pricing_runs_single_running"
     add_index :pricing_runs, :created_at
   end

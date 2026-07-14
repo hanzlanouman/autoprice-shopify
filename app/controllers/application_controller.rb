@@ -3,7 +3,7 @@ class ApplicationController < ActionController::Base
   allow_browser versions: :modern
 
   # The dashboard can trigger live price changes, so gate the whole app behind
-  # HTTP basic auth whenever APP_PASSWORD is configured (see docs/DEPLOYMENT.md).
+  # HTTP basic auth whenever APP_PASSWORD is configured.
   # Left blank in local dev, the gate is disabled for convenience.
   before_action :authenticate_app!
 

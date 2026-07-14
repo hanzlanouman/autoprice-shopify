@@ -1,4 +1,4 @@
-# Single source of the pricing-run JSON shape (docs/ARCHITECTURE.md). Pass
+# Single source of the pricing-run JSON shape. Pass
 # include_changes: true for the run detail view.
 class PricingRunSerializer
   def initialize(run, include_changes: false)

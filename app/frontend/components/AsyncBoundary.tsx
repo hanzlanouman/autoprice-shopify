@@ -2,7 +2,7 @@ import { ReactNode } from 'react'
 import { Banner, Card, SkeletonBodyText, BlockStack } from '@shopify/polaris'
 
 // Shared loading/error/empty handling so every data view behaves consistently
-// and no screen is ever blank (docs/ARCHITECTURE.md).
+// and no screen is ever blank.
 export function AsyncBoundary({
   isLoading,
   isError,

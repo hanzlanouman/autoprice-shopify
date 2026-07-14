@@ -1,4 +1,4 @@
-# Single source of the product JSON shape (docs/ARCHITECTURE.md). Eligibility is computed
+# Single source of the product JSON shape. Eligibility is computed
 # via Pricing::Bounds when settings are supplied, so the dashboard and the
 # pricing pipeline agree on what "eligible" means (D2). Phase 1 passes no
 # settings and eligibility is reported as not-yet-evaluated.

@@ -4,8 +4,7 @@ require "faraday/retry"
 module Gemini
   # The only HTTP-aware code for Gemini. Calls generateContent with a strict
   # responseSchema (structured JSON out), retries transient failures with
-  # backoff, and returns parsed JSON — mapping every failure to Gemini::Error
-  # (docs/ARCHITECTURE.md).
+  # backoff, and returns parsed JSON — mapping every failure to Gemini::Error.
   class Client
     BASE_URL = "https://generativelanguage.googleapis.com/v1beta".freeze
     OPEN_TIMEOUT = 5

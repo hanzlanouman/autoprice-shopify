@@ -1,5 +1,5 @@
-# One execution of the pricing pipeline — the unit the dashboard reports on
-# (docs/ARCHITECTURE.md). At most one run is "running" at a time (advisory lock + partial
+# One execution of the pricing pipeline — the unit the dashboard reports on.
+# At most one run is "running" at a time (advisory lock + partial
 # unique index).
 class PricingRun < ApplicationRecord
   STATUSES = %w[running completed failed].freeze

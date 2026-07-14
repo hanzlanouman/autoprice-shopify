@@ -1,4 +1,4 @@
-# Single source of the settings JSON shape (docs/ARCHITECTURE.md). Money as a string.
+# Single source of the settings JSON shape. Money is serialized as a string.
 class SettingSerializer
   def initialize(setting, currency: "USD")
     @setting = setting

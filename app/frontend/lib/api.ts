@@ -1,5 +1,5 @@
 // Single entry point for all API calls. Handles the error envelope, JSON
-// parsing, and CSRF. Components/hooks never call fetch directly (docs/ARCHITECTURE.md).
+// parsing, and CSRF. Components/hooks never call fetch directly.
 
 export interface ApiErrorShape {
   code: string

@@ -2,7 +2,7 @@ module Pricing
   module Recommender
     # Interface every recommender implements. Gemini and the deterministic
     # fallback are interchangeable behind this, which is what lets the whole
-    # pipeline run and be tested without the network (docs/ARCHITECTURE.md).
+    # pipeline run and be tested without the network.
     class Base
       # eligible: Array<EligibilityFilter::Eligible>, settings: Setting
       # Returns Array<Value::Recommendation> (one per eligible variant).

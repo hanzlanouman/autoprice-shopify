@@ -1,6 +1,6 @@
 module Shopify
-  # All GraphQL documents live here so query changes are deliberate and diffable
-  # (docs/ARCHITECTURE.md). Prices live on variants; we fetch inventory + tracked so the
+  # All GraphQL documents live here so query changes are deliberate and
+  # diffable. Prices live on variants; we fetch inventory + tracked so the
   # pipeline can decide eligibility. The 40 x 10 nested page stays comfortably
   # below Shopify's single-query cost ceiling; larger variant sets continue in
   # independent 250-node pages.

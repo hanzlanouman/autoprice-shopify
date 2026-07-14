@@ -1,5 +1,5 @@
 # Shop-level metadata. Currency is fetched once from Shopify and cached; without
-# credentials it defaults to USD so the app runs on seed data (docs/DEPLOYMENT.md).
+# credentials it defaults to USD so the app runs on seed data.
 module ShopInfo
   module_function
 

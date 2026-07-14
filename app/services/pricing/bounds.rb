@@ -1,6 +1,6 @@
 module Pricing
-  # THE single place pricing bounds and increase-eligibility are computed
-  # (docs/ARCHITECTURE.md). The prompt builder serializes bounds INTO the Gemini
+  # THE single place pricing bounds and increase-eligibility are computed. The
+  # prompt builder serializes bounds INTO the Gemini
   # request and the validator checks responses AGAINST them, so what we ask for
   # and what we enforce can never drift.
   class Bounds

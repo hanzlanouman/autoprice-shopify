@@ -1,4 +1,4 @@
-# Local cache of Shopify products (docs/ARCHITECTURE.md). Shopify remains the source
+# Local cache of Shopify products. Shopify remains the source
 # of truth; this exists for fast dashboard reads, the re-adjustment guard, and
 # original-price memory. It is never an input to pricing bounds.
 class Product < ApplicationRecord

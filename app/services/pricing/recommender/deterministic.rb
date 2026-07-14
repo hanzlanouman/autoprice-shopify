@@ -9,7 +9,7 @@ module Pricing
     # not compound from a previously raised current price. The +1 produces a
     # small signal exactly at the threshold; sold-out items are excluded first.
     # Doubles as the dev/test recommender (no API key needed) and the opt-in
-    # outage fallback. Rows it produces are labeled source "fallback" (docs/ARCHITECTURE.md).
+    # outage fallback. Rows it produces are labeled source "fallback".
     class Deterministic < Base
       def initialize(source: "fallback")
         @source = source

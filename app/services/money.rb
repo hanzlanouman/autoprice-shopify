@@ -1,6 +1,6 @@
 # Single entry point for turning inbound values (Shopify strings, API params,
 # Gemini output) into BigDecimal. Money is BigDecimal in Ruby, decimal in the
-# DB, and a string in JSON — never a float (docs/ARCHITECTURE.md).
+# DB, and a string in JSON — never a float.
 module Money
   module_function
 

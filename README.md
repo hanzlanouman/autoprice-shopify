@@ -1,26 +1,104 @@
 # Shopify AI Dynamic Pricing Assistant
 
-A single-store Rails and React prototype that adjusts Shopify variant prices as
-inventory becomes scarce. Gemini may recommend a price, but deterministic Ruby
-rules decide whether a write is allowed. Every material outcome is visible in a
-Shopify Polaris dashboard and retained in searchable history.
+A submission for the MGLogics practical challenge: a single-store dynamic
+pricing system built with Ruby on Rails, React, Shopify Polaris, PostgreSQL,
+Shopify Admin GraphQL, and Google Gemini.
 
-## What it demonstrates
+The application synchronizes Shopify products and variants, evaluates
+inventory-sensitive pricing rules, writes valid prices automatically, and
+provides a clear dashboard and audit history. Gemini can recommend prices, but
+deterministic server-side rules remain the authority for every Shopify write.
 
-- Shopify GraphQL product/variant sync, pagination, currency, and price writes;
-- inventory threshold and base-relative maximum-price settings;
-- hourly, daily, weekly, monthly, and demo-minute automation with Solid Queue;
-- structured Gemini recommendations with strict server validation;
-- reliable, clearly labeled deterministic fallback pricing;
-- current-price conflict protection and durable write reconciliation;
-- base/current/latest-change clarity and per-variant history;
-- optional, off-by-default restoration of app-owned increases after restock;
-- credential-free local demo and a DigitalOcean App Platform deployment spec.
+## Solution coverage
 
-This is a private, standalone, single-store prototype. It is not an embedded or
-multi-tenant Shopify App Store application.
+| Challenge requirement | Implementation |
+|---|---|
+| Fetch product title, ID, price, inventory, type, and vendor | Cursor-paginated Shopify GraphQL synchronization and local cache |
+| Automatically update prices | Manual and scheduled Solid Queue jobs use Shopify bulk variant updates |
+| Inventory threshold | Persisted setting evaluated before recommendation |
+| Maximum allowed price | Global percentage computes a separate ceiling from each variant's base price |
+| Hourly, daily, weekly, and monthly execution | Persisted due time checked by the recurring scheduler; minute cadence is included for demonstration |
+| Optional AI behavior prompt | Length-limited merchant instructions are included in the structured Gemini request |
+| Never exceed maximum or recommend below current | Shared Ruby bounds and validator run before every write |
+| Safely ignore malformed AI output | Structured schema, parsing, validation, classified retries, safe skip, and optional labeled fallback |
+| Read-only monitoring dashboard | Product, inventory, base/current price, latest change, source, outcome, reason, and run status |
+| Price history | Append-only searchable outcomes with old/new price, inventory, timestamp, source, and explanation |
 
-## Run the demo
+The original challenge is preserved unchanged in
+[`docs/initial`](docs/initial/Shopify%20AI%20Dynamic%20Pricing%20Assistant.md).
+
+## Key engineering decisions
+
+- **AI advises; deterministic code authorizes.** Model output is untrusted and
+  revalidated immediately before an external write.
+- **The maximum is percentage-based.** The challenge's `100 → 150` example is
+  represented by a default maximum of 150% of base, which also scales correctly
+  for products priced at 800, 1,000, or any other value.
+- **Shopify is authoritative for live price.** A final price read prevents a
+  concurrent merchant edit from being overwritten.
+- **External writes are recoverable.** A durable intent is stored before the
+  Shopify mutation and reconciled if the remote result is ambiguous.
+- **Scheduled runs cannot ratchet a stable product.** A previously adjusted
+  variant requires a further inventory drop before another increase.
+- **Price restoration is explicit.** Recommendations remain increase-only as
+  required. An off-by-default system option may restore only an app-owned price
+  to base after inventory recovers; merchant edits always win.
+- **One database is sufficient.** PostgreSQL stores application data, audit
+  history, locks, recovery intents, and Solid Queue jobs without Redis.
+
+## Pricing behavior
+
+Each active, inventory-tracked, non-gift-card variant is considered when:
+
+```text
+0 < inventory <= inventory threshold
+```
+
+Accepted recommendations must satisfy:
+
+```text
+floor   = live current Shopify price
+ceiling = stored base price × maximum percentage / 100
+
+floor <= recommendation <= ceiling
+```
+
+Sold-out, untracked, gift-card, at-ceiling, and guard-blocked variants are
+excluded before Gemini. Invalid recommendations are rejected rather than
+silently clamped.
+
+When Gemini is unavailable, the merchant may enable a deterministic fallback:
+
+```text
+scarcity = clamp((threshold - inventory + 1) / (threshold + 1), 0, 1)
+target   = base + (ceiling - base) × scarcity
+```
+
+The formula is anchored to base price, so repeated runs at the same inventory
+produce the same target instead of compounding. Its source is always displayed
+as **Fallback formula**.
+
+## Architecture
+
+```text
+React 18 + Shopify Polaris + TanStack Query
+                       |
+                 Rails JSON API
+                       |
+     pricing rules, provider clients, reconciliation
+                  /                 \
+     Shopify Admin GraphQL       Gemini API
+                       |
+             PostgreSQL + Solid Queue
+```
+
+Rails serves the Vite-built React application. Controllers remain thin;
+provider communication, eligibility, bounds, recommendation, validation,
+application, reconciliation, and history are separated into focused services.
+TanStack Query owns remote state and cancellation, while form, filter,
+pagination, and modal state remain local to React components.
+
+## Run locally
 
 Prerequisite: Docker Desktop or Docker Engine with Compose v2.
 
@@ -36,170 +114,79 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Open <http://localhost:3000>. No Shopify or Gemini credentials are required.
-Blank Shopify credentials select a seeded local store; with no live Shopify
-connection, blank Gemini credentials select the deterministic recommender.
+Open <http://localhost:3000>. With Shopify and Gemini credentials blank, the
+application uses the seeded local store and deterministic recommender.
 
-Suggested walkthrough:
+Suggested evaluation flow:
 
-1. Review the threshold and 150%-of-base maximum in **Settings**.
-2. Keep automatic pricing off and click **Run now** on **Dashboard**.
-3. Compare base price, current price, latest change, source, outcome, and reason.
-4. Open a variant's details, then search and sort **Price History**.
-5. Run again without lowering inventory to demonstrate repeat-adjustment
+1. Open **Settings** and review the threshold and maximum percentage.
+2. Keep automatic pricing off and select **Run now**.
+3. Review base price, current price, latest change, source, outcome, and reason.
+4. Open variant details and search/sort **Price History**.
+5. Run again without reducing inventory to demonstrate repeat-adjustment
    protection.
 
-Useful commands:
+## Connect a Shopify development store
 
-```bash
-docker compose logs -f web worker
-docker compose exec web bin/rails demo:seed_local
-docker compose exec web bin/rails console
-docker compose down
-```
-
-`docker compose down -v` also deletes the local PostgreSQL volume and history.
-
-## Pricing rules in brief
-
-The global maximum is a percentage of each variant's stored merchant base:
-
-```text
-floor   = live current Shopify price
-ceiling = base price * maximum percentage / 100
-floor <= accepted recommendation <= ceiling
-```
-
-Only active, inventory-tracked, non-gift-card variants with
-`0 < inventory <= threshold` are considered. Sold-out, untracked, at-ceiling,
-and unchanged already-adjusted variants are skipped before AI. Invalid model
-output is rejected rather than clamped.
-
-AI and fallback never recommend below current price. Restoration is a separate
-system action, disabled by default, which may return only an app-owned increase
-to base after stock recovers. A merchant or third-party Shopify edit always wins
-and becomes the new base.
-
-The fallback is base-anchored rather than compounded:
-
-```text
-scarcity = clamp((threshold - inventory + 1) / (threshold + 1), 0, 1)
-target   = base + (ceiling - base) * scarcity
-```
-
-## Connect Shopify and Gemini
-
-Use a disposable Shopify development store. In the Shopify Dev Dashboard,
-create/release an app for the same organization and grant required Admin API
-scopes:
+Create and release an app in Shopify's Dev Dashboard for the same organization
+as the development store. Required Admin API scopes are:
 
 - `read_products`
 - `write_products`
 - `read_inventory`
 
-The optional live-store seeder also needs `read_locations` and
-`write_inventory`. Install the released app, then configure `.env`:
+The optional `demo:seed_shopify` task additionally needs `read_locations` and
+`write_inventory`. Install the released app and configure `.env`:
 
 ```dotenv
-SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SHOPIFY_STORE_DOMAIN=store-name.myshopify.com
 SHOPIFY_API_KEY=<client-id>
 SHOPIFY_API_SECRET=<client-secret>
 SHOPIFY_ACCESS_TOKEN=
 
-GEMINI_API_KEY=<optional-google-ai-studio-key>
+GEMINI_API_KEY=<optional-key>
 GEMINI_MODEL=gemini-3.5-flash
 ```
 
-For an existing legacy custom app, leave the key/secret blank and set its static
-`SHOPIFY_ACCESS_TOKEN`. Never commit `.env`.
-
-Restart after editing environment values:
+Restart the services and verify the connection:
 
 ```bash
 docker compose up -d --force-recreate web worker
 docker compose exec web bin/rails runner "puts Shopify::Client.new.fetch_shop_currency"
 ```
 
-Optionally populate only a disposable development store:
+The control panel is hosted by this application, not embedded in Shopify Admin.
+Installing the Shopify app grants Admin API access; operators use the local or
+deployed application URL for Dashboard, History, and Settings.
+
+## Deploy to DigitalOcean App Platform
+
+The included `.do/app.yaml` defines a demonstration deployment in Bangalore:
+
+- one pre-deploy `bin/rails db:prepare` job;
+- one 1 GB web service;
+- one automatically provisioned PostgreSQL development database;
+- Solid Queue inside Puma, avoiding a second worker component;
+- `/up` health checks and encrypted runtime configuration.
+
+Create it with:
 
 ```bash
-docker compose exec web bin/rails demo:seed_shopify
+doctl apps create --spec .do/app.yaml
 ```
 
-With live Shopify configured but Gemini unavailable, the default behavior is no
-AI-driven change. The merchant can explicitly enable the labeled fallback in
-Settings.
+Required encrypted values are `SECRET_KEY_BASE`, `APP_PASSWORD`, Shopify
+credentials, and optionally `GEMINI_API_KEY`. `APP_PASSWORD` must contain at
+least 16 characters. The database reference is already bound to
+`${pricing-db.DATABASE_PRIVATE_URL}`; do not paste a database URL manually.
 
-## Configuration
+After deployment, verify `/up`, sign in, confirm automatic pricing is off, sync
+the development-store catalogue, and complete one controlled manual run before
+enabling scheduling.
 
-Copy `.env.example`; it is the authoritative variable template. Important
-production values are:
-
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | PostgreSQL shared by Rails and Solid Queue |
-| `SECRET_KEY_BASE` | Rails cryptographic secret |
-| `APP_USERNAME`, `APP_PASSWORD` | Dashboard Basic auth; production password must be at least 16 characters |
-| `SHOPIFY_STORE_DOMAIN` | Permanent `*.myshopify.com` hostname |
-| `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET` | Current own-store client credentials |
-| `SHOPIFY_ACCESS_TOKEN` | Alternative legacy static token |
-| `SHOPIFY_API_VERSION` | Explicit Shopify version, default `2026-07` |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | Optional Gemini integration |
-| `SOLID_QUEUE_IN_PUMA` | Single-component hosting only; do not combine with a worker |
-
-## Deploy the demo
-
-Use **DigitalOcean App Platform** for the simplest hosted demo. The included
-`.do/app.yaml` creates a pre-deploy migration job, one web component, and a
-PostgreSQL development database. Solid Queue runs inside Puma to avoid a second
-paid component.
-
-The database is provisioned and wired automatically by App Platform; it is not
-a separately configured Managed Database. The current expected standing cost is
-about $17/month: $10 for the 1 GB web component and $7 for the development
-database, plus any overages.
-
-1. Push the repository to GitHub.
-2. Replace `GITHUB_OWNER/GITHUB_REPO` in `.do/app.yaml`.
-3. Create the app:
-
-   ```bash
-   doctl apps create --spec .do/app.yaml
-   ```
-
-4. Set encrypted `SECRET_KEY_BASE`, `APP_PASSWORD`, Shopify credentials, and
-   optional `GEMINI_API_KEY` in DigitalOcean.
-5. Verify `/up`, sign in, confirm automatic pricing is off, sync products, and
-   perform one controlled manual run.
-
-The included database is appropriate for a challenge demo, not important
-merchant data. Production use needs managed PostgreSQL backups, a dedicated
-`bin/jobs` worker, monitoring, alerting, and tested recovery.
-
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for exact setup and incident steps.
-
-## Technical shape
-
-```text
-React + Polaris + TanStack Query
-             |
-        Rails JSON API
-             |
-pricing pipeline + Shopify/Gemini clients
-             |
-PostgreSQL + Solid Queue
-```
-
-Rails serves the Vite-built React SPA. Controllers stay thin; pricing rules,
-provider clients, immutable values, writes, and reconciliation are separated in
-focused service layers. TanStack Query owns server state while form, filter,
-pagination, and modal state remain local to components. PostgreSQL provides
-decimal money, indexes, audit data, advisory locks, recovery intents, and jobs;
-Redis and a separate frontend host are unnecessary for this prototype.
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the component and safety
-design, and [docs/ENGINEERING-CASE-STUDY.md](docs/ENGINEERING-CASE-STUDY.md) for
-the requirements interpretation, alternatives, iteration history, and lessons.
+This App Platform configuration is appropriate for a challenge demonstration.
+Business-critical use would require managed database backups, a dedicated job
+worker, monitoring, alerting, and tested recovery.
 
 ## Verification
 
@@ -216,27 +203,35 @@ docker compose exec web bin/bundler-audit
 docker build -t dynamic-pricing-assistant:verify .
 ```
 
-Final audit: 129 RSpec examples and 15 frontend tests passed; RuboCop, ESLint,
-TypeScript, Prettier, Vite, Brakeman, bundler-audit, runtime smoke checks, and
-the production Docker build also passed. CI runs these non-live gates without
-calling Shopify or Gemini. Full evidence is in
-[docs/VALIDATION.md](docs/VALIDATION.md).
+Final audit results:
 
-## Documentation
+- 129 RSpec examples passed;
+- 15 Vitest/Testing Library tests passed;
+- RuboCop, ESLint, TypeScript, and Prettier passed;
+- Brakeman reported zero warnings;
+- bundler-audit reported no known vulnerable gems;
+- Vite and the production Docker image built successfully;
+- health, SPA, settings, and product API smoke checks passed.
 
-- [Original challenge](docs/initial/Shopify%20AI%20Dynamic%20Pricing%20Assistant.md)
-- [Engineering case study](docs/ENGINEERING-CASE-STUDY.md)
-- [Solution architecture](docs/ARCHITECTURE.md)
-- [Requirements and validation](docs/VALIDATION.md)
-- [DigitalOcean deployment](docs/DEPLOYMENT.md)
+GitHub Actions repeats the non-live lint, test, security, asset, and production
+image gates without calling Shopify or Gemini.
 
-## Scope and safety
+## Repository structure
 
-Automatic pricing changes real Shopify prices without approval. Keep it off
-until settings and one manual development-store run are verified. Stop web/jobs
-to halt writes at infrastructure level. Shopify is authoritative for live price;
-PostgreSQL is authoritative for this application's history and guards.
+```text
+app/clients/              Shopify and Gemini adapters
+app/services/pricing/     Pricing pipeline and safety rules
+app/controllers/api/v1/   Versioned JSON API
+app/jobs/                 Pricing execution and scheduler
+app/frontend/             React, Polaris, queries, and tests
+db/migrate/               Application and Solid Queue schema
+docs/initial/             Original challenge document
+.do/app.yaml              DigitalOcean demonstration topology
+```
 
-Not implemented: multi-store OAuth/App Bridge/billing, webhooks, per-product
-caps, bulk rollback, preferred schedule time zones, or production-grade identity
-and observability. These are documented product boundaries, not hidden claims.
+## Scope
+
+This is a private, single-store engineered prototype. Multi-store OAuth,
+Shopify App Bridge embedding, billing, webhooks, user roles, per-product caps,
+bulk rollback, preferred schedule time zones, and production observability are
+outside the challenge scope and are not represented as completed features.

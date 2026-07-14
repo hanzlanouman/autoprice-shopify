@@ -4,7 +4,7 @@ require "faraday/retry"
 module Shopify
   # The only HTTP-aware code for Shopify. Exposes intent-revealing methods over
   # the GraphQL Admin API and maps every failure into the Shopify::Error
-  # taxonomy so nothing Faraday-specific escapes (docs/ARCHITECTURE.md).
+  # taxonomy so nothing Faraday-specific escapes.
   class Client
     DEFAULT_API_VERSION = "2026-07"
     THROTTLE_MAX_RETRIES = 5
@@ -20,7 +20,7 @@ module Shopify
     end
 
     # Real client when credentials exist, otherwise a local simulation so the
-    # pricing pipeline runs on seed data without Shopify (docs/DEPLOYMENT.md).
+    # pricing pipeline runs on seed data without Shopify.
     def self.build
       configured? ? new : LocalClient.new
     end

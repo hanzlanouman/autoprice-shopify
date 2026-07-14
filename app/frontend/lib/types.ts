@@ -1,4 +1,4 @@
-// TS mirror of the API serializers (docs/ARCHITECTURE.md). Money is transported as a
+// TS mirror of the API serializers. Money is transported as a
 // string (e.g. "149.99") and only parsed for display via lib/format.
 
 export type ReviewFrequency =

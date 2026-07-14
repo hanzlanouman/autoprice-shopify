@@ -4,7 +4,7 @@ module Pricing
     # told (D2). Uses structured output (responseSchema) to minimise malformed
     # replies, batches variants to control cost, and degrades per-chunk: a failed
     # chunk yields :gemini_unavailable recommendations (skipped downstream) while
-    # other chunks proceed (docs/ARCHITECTURE.md).
+    # other chunks proceed.
     class Gemini < Base
       CHUNK_SIZE = 20
       DEFAULT_CHUNK_DELAY = 0.25

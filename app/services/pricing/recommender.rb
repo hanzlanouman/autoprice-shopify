@@ -1,7 +1,7 @@
 module Pricing
   # Namespace + factory for recommenders. Chooses Gemini when configured,
-  # otherwise the deterministic recommender so the pipeline always runs
-  # (docs/ARCHITECTURE.md).
+  # otherwise the deterministic recommender so the pipeline always runs. Both
+  # recommenders implement the same application-facing contract.
   module Recommender
     def self.for_environment
       if ::Gemini::Client.configured?

@@ -1,6 +1,6 @@
 module Shopify
   # Raised when a GraphQL mutation returns non-empty userErrors. Carries the
-  # structured error list for the audit trail (docs/ARCHITECTURE.md).
+  # structured error list for the audit trail.
   class UserError < Error
     attr_reader :user_errors
 

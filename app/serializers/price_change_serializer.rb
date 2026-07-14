@@ -1,5 +1,5 @@
 # Single source of the price-change JSON shape, shared by the history list and
-# run detail (docs/ARCHITECTURE.md). Money as strings.
+# run detail. Money is serialized as strings.
 class PriceChangeSerializer
   def initialize(price_change)
     @price_change = price_change

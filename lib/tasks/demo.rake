@@ -1,4 +1,4 @@
-# Demo data tasks (see docs/ENGINEERING-CASE-STUDY.md).
+# Demo data tasks for local and Shopify development-store evaluation.
 #
 #   bin/rails demo:seed_local    # populate the local product cache directly
 #                                # (no Shopify credentials needed) — the path

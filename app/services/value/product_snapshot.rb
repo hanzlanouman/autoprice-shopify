@@ -1,5 +1,5 @@
 module Value
-  # Immutable view of a product plus its variant snapshots (docs/ARCHITECTURE.md).
+  # Immutable view of a product plus its variant snapshots.
   ProductSnapshot = Data.define(
     :gid,
     :title,
